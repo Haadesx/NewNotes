@@ -1,36 +1,76 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AudioNotes 🎙️
 
-## Getting Started
+I built **AudioNotes** because I wanted a reliable way to turn messy audio recordings—meetings, lectures, and brain dumps—into structured, trustworthy notes I could actually use.
 
-First, run the development server:
+Unlike generic transcription tools that just dump a wall of text, or AI wrappers that "hallucinate" facts, I designed this system to be verifying, cost-effective, and easy to use.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## ✨ What I Built
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Two Powerful Modes
+1.  **Live Recording**: Real-time transcription and note generation as you speak. Perfect for capturing ideas or lectures in the moment.
+2.  **File Upload**: Drag & drop existing audio files to process them asynchronously with high-accuracy models.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Key Features
+-   **🛡️ Anti-Hallucination**: I implemented a strict verification step where the AI must cite timestamps for every claim it makes. If it can't find the source in the transcript, it doesn't include it.
+-   **💸 Cost-Optimized AI**: The app uses a "waterfall" strategy for LLMs. It prioritizes free/fast models (like Llama 3 on Groq) and only falls back to paid providers if necessary.
+-   **📝 Structured Outputs**: Different modes (Meeting, Lecture, Interview, Brainstorm) generate different note formats tailored to the content.
+-   **🔒 Local-First**: Your recordings and database live on your machine (SQLite + Local Files), keeping your data private.
+-   **⏯️ Live-Sync**: In live mode, see the transcript and key points appear side-by-side in real-time.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🛠️ Tech Stack
 
-## Learn More
+I chose a modern, robust stack to build this:
 
-To learn more about Next.js, take a look at the following resources:
+-   **Frontend**: Next.js 14 (App Router), Tailwind CSS, Lucide Icons.
+-   **Backend**: Next.js API Routes.
+-   **Database**: Prisma + SQLite (for persistent storage of notes and usage quotas).
+-   **AI Processing**:
+    -   **Transcription**: AssemblyAI (Async) & Web Speech API (Real-time).
+    -   **LLMs**: Groq (Llama 3, Mixtral) & OpenRouter (DeepSeek, Gemini).
+-   **State Management**: React Hooks for complex media handling (`useMicrophone`, `useLiveTranscription`).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🚀 Getting Started
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+If you want to run my project locally:
 
-## Deploy on Vercel
+1.  **Clone the repo**
+    ```bash
+    git clone https://github.com/Haadesx/NewNotes.git
+    cd NewNotes
+    ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+2.  **Install Dependencies**
+    ```bash
+    npm install
+    ```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+3.  **Set up Environment**
+    Create a `.env` file with your keys:
+    ```env
+    DATABASE_URL="file:./prisma/dev.db"
+    GROQ_API_KEY="your_key"
+    OPENROUTER_API_KEY="your_key"
+    ASSEMBLYAI_API_KEY="your_key"
+    ```
+
+4.  **Run the Server**
+    ```bash
+    # Prepare the database
+    npx prisma db push
+
+    # Start the app
+    npm run dev
+    ```
+
+5.  Open `http://localhost:3000` and start recording!
+
+## 🔮 Future Plans
+
+I'm planning to add:
+-   Cloud sync for accessing notes across devices.
+-   Deeper integration with Notion/Obsidian.
+-   Speaker identification for live recordings.
+
+---
+
+*Built with ❤️ by Haadesx*
