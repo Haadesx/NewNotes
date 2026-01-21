@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Recording {
+  id          String      @id @default(cuid())
+  filename    String
+  originalName String
+  duration    Int?        // in seconds
+  mode        String      @default("meeting") // meeting, lecture, interview, brainstorm
+  status      String      @default("pending") // pending, processing, completed, failed
+  errorMessage String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  transcript  Transcript?
+  note        Note?
+}
+
+model Transcript {
+  id          String    @id @default(cuid())
+  recordingId String    @unique
+  recording   Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  
+  content     String    // Full transcript markdown
+  speakers    String    // JSON array of speaker info [{id, label, color}]
+  segments    String    // JSON array of segments [{start, end, speaker, text, confidence}]
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Note {
+  id          String    @id @default(cuid())
+  recordingId String    @unique
+  recording   Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  
+  title       String
+  summary     String    // One-line summary
+  content     String    // Full structured notes markdown
+  
+  // Structured data stored as JSON strings
+  keyPoints       String  @default("[]") // JSON array
+  decisions       String  @default("[]") // JSON array [{text, timestamp, verified}]
+  actionItems     String  @default("[]") // JSON array [{task, owner, dueDate, timestamp}]
+  highlights      String  @default("[]") // JSON array [{quote, speaker, timestamp}]
+  revisitPoints   String  @default("[]") // JSON array [{timestamp, reason}]
+  uncertainties   String  @default("[]") // JSON array [{text, type, timestamp}]
+  
+  contextSummary  String? // What/why/how summary
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model UsageLog {
+  id          String    @id @default(cuid())
+  sessionId   String    // Browser session ID for anonymous users
+  
+  recordingId String?
+  minutes     Float     // Audio duration in minutes
+  cost        Float     @default(0) // Estimated cost in USD
+  model       String    // Model used
+  tokensUsed  Int       @default(0)
+  
+  createdAt   DateTime  @default(now())
+}
+
+model UsageQuota {
+  id                String    @id @default(cuid())
+  sessionId         String    @unique
+  
+  minutesUsed       Float     @default(0)
+  minutesLimit      Float     @default(60)  // 60 min/month free
+  maxRecordingLength Int      @default(600) // 10 min max per recording (in seconds)
+  
+  resetAt           DateTime  // When quota resets
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
