@@ -8,7 +8,6 @@ on:
       - 'public/assets/gource.mp4'
       - 'public/assets/gource.gif'
       - 'README.md'
-      - '.github/workflows/visualize-history.yml'
 
 jobs:
   update-visualization:
