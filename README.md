@@ -118,6 +118,16 @@ Want to run this locally? It's easy.
 
 <br />
 
+## 📜 Project History (Visualization)
+
+A Gource visualization of the project's development history.
+
+<div align="center">
+  <img src="public/assets/gource.gif" alt="Project History Visualization" width="100%" style="border-radius: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);" />
+</div>
+
+<br />
+
 ## 🔮 Future Roadmap
 
 - [ ] **Cloud Sync**: Optional sync to Google Drive / S3.
