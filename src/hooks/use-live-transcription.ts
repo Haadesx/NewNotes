@@ -28,7 +28,7 @@ export function useLiveTranscription(): UseLiveTranscriptionResult {
     const [transcript, setTranscript] = useState<TranscriptSegment[]>([]);
     const [interimText, setInterimText] = useState('');
 
-    const recognitionRef = useRef<SpeechRecognition | null>(null);
+    const recognitionRef = useRef<any>(null);
     const startTimeRef = useRef<number>(0);
     // Use a ref to track if we should keep running (avoids stale closure issue)
     const shouldRestartRef = useRef<boolean>(false);
@@ -40,7 +40,7 @@ export function useLiveTranscription(): UseLiveTranscriptionResult {
         shouldRestartRef.current = true;
 
         try {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
             if (!SpeechRecognition) {
                 throw new Error('Speech recognition not supported in this browser');
@@ -56,7 +56,7 @@ export function useLiveTranscription(): UseLiveTranscriptionResult {
                 setIsConnecting(false);
             };
 
-            recognition.onresult = (event) => {
+            recognition.onresult = (event: any) => {
                 let interim = '';
 
                 for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -82,7 +82,7 @@ export function useLiveTranscription(): UseLiveTranscriptionResult {
                 }
             };
 
-            recognition.onerror = (event) => {
+            recognition.onerror = (event: any) => {
                 console.error('Speech recognition error:', event.error);
                 if (event.error !== 'no-speech' && event.error !== 'aborted') {
                     setError(`Recognition error: ${event.error}`);
@@ -157,10 +157,4 @@ export function useLiveTranscription(): UseLiveTranscriptionResult {
     };
 }
 
-// Type declarations for Web Speech API
-declare global {
-    interface Window {
-        SpeechRecognition: typeof SpeechRecognition;
-        webkitSpeechRecognition: typeof SpeechRecognition;
-    }
-}
+

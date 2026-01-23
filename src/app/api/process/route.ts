@@ -12,6 +12,11 @@ export async function POST(request: NextRequest) {
     try {
         const { recordingId, sessionId } = await request.json();
 
+        // Extract API keys from headers
+        const groqApiKey = request.headers.get('x-groq-key') || undefined;
+        const openRouterApiKey = request.headers.get('x-openrouter-key') || undefined;
+        const assemblyAiApiKey = request.headers.get('x-assemblyai-key') || undefined;
+
         if (!recordingId) {
             return NextResponse.json(
                 { error: 'Recording ID required' },
@@ -41,7 +46,10 @@ export async function POST(request: NextRequest) {
             // Step 1: Transcribe with diarization
             let diarizationResult;
 
-            if (process.env.ASSEMBLYAI_API_KEY && process.env.ASSEMBLYAI_API_KEY !== 'your_assemblyai_key_here') {
+            // Use passed key or env var for AssemblyAI
+            const aaiKey = assemblyAiApiKey || process.env.ASSEMBLYAI_API_KEY;
+
+            if (aaiKey && aaiKey !== 'your_assemblyai_key_here') {
                 // Use real AssemblyAI transcription
                 const audioPath = join(UPLOAD_DIR, recording.filename);
                 // For AssemblyAI, we need to upload the file or use a URL
@@ -72,12 +80,17 @@ export async function POST(request: NextRequest) {
             // Step 3: Process with LLM
             let noteResult;
 
-            if (process.env.GROQ_API_KEY && process.env.GROQ_API_KEY !== 'your_groq_key_here') {
+            // Check if we have valid keys (either passed or env)
+            const hasGroq = !!(groqApiKey || (process.env.GROQ_API_KEY && process.env.GROQ_API_KEY !== 'your_groq_key_here'));
+            const hasOpenRouter = !!(openRouterApiKey || (process.env.OPENROUTER_API_KEY && process.env.OPENROUTER_API_KEY !== 'your_key_here'));
+
+            if (hasGroq || hasOpenRouter) {
                 noteResult = await processTranscript(
                     diarizationResult.transcript,
                     diarizationResult.segments,
                     recording.mode as RecordingMode,
-                    diarizationResult.duration
+                    diarizationResult.duration,
+                    { groqApiKey, openRouterApiKey }
                 );
             } else {
                 // Mock result for development without API keys

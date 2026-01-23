@@ -9,9 +9,14 @@ const MODE_PROMPTS: Record<RecordingMode, string> = {
     brainstorm: 'Capture ideas mentioned and any pros/cons discussed.',
 };
 
+
 export async function POST(request: NextRequest) {
     try {
         const { transcript, mode } = await request.json();
+
+        // Extract API keys from headers
+        const groqApiKey = request.headers.get('x-groq-key') || undefined;
+        const openRouterApiKey = request.headers.get('x-openrouter-key') || undefined;
 
         if (!transcript || transcript.length < 50) {
             return NextResponse.json({
@@ -45,7 +50,12 @@ Generate a brief summary (1-2 sentences) and up to 5 key points. Respond in JSON
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: userPrompt },
             ],
-            { maxTokens: 500, temperature: 0.3 }
+            {
+                maxTokens: 500,
+                temperature: 0.3,
+                groqApiKey,
+                openRouterApiKey
+            }
         );
 
         // Parse JSON response

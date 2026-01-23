@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { useApiKeys } from '@/hooks/use-api-keys';
 import { RecordingMode } from '@/types';
 
 interface LiveNote {
@@ -28,6 +29,9 @@ export function useLiveNotes(mode: RecordingMode): UseLiveNotesResult {
     const lastProcessedLengthRef = useRef<number>(0);
     const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+
+    const { keys } = useApiKeys();
+
     const processTranscript = useCallback(async (newText: string, currentMode: RecordingMode) => {
         accumulatedTextRef.current = newText;
 
@@ -47,9 +51,14 @@ export function useLiveNotes(mode: RecordingMode): UseLiveNotesResult {
             setError(null);
 
             try {
+                // Prepare headers
+                const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+                if (keys.groqApiKey) headers['x-groq-key'] = keys.groqApiKey;
+                if (keys.openRouterApiKey) headers['x-openrouter-key'] = keys.openRouterApiKey;
+
                 const response = await fetch('/api/live-notes', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers,
                     body: JSON.stringify({
                         transcript: accumulatedTextRef.current,
                         mode: currentMode,

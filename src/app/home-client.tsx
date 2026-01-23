@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import AudioUpload from '@/components/audio-upload';
+import ApiKeyModal from '@/components/api-key-modal';
 import UsageDisplay from '@/components/usage-display';
 import { UsageStats, Recording } from '@/types';
 import { FileAudio, ChevronRight, Clock, Loader2, Sparkles } from 'lucide-react';
@@ -184,6 +185,7 @@ export default function HomePage() {
                 )}
             </main>
 
+
             {/* Footer */}
             <footer className="border-t border-gray-800/50 py-8 mt-12">
                 <div className="max-w-6xl mx-auto px-6 text-center text-sm text-gray-500">
@@ -191,6 +193,8 @@ export default function HomePage() {
                     <p className="mt-1">Free tier: 60 min/month • Max 10 min per recording</p>
                 </div>
             </footer>
+
+            <ApiKeyModal />
         </div>
     );
 }

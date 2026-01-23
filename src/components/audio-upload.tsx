@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useState } from 'react';
+import { useApiKeys } from '@/hooks/use-api-keys';
 import { useDropzone } from 'react-dropzone';
 import { Upload, FileAudio, X, Loader2 } from 'lucide-react';
 import { isValidAudioFile, formatFileSize, RECORDING_MODES } from '@/lib/utils';
@@ -39,6 +40,10 @@ export default function AudioUpload({ onUploadComplete, sessionId }: AudioUpload
         maxFiles: 1,
     });
 
+
+    // Use the hook to get keys
+    const { keys } = useApiKeys();
+
     const handleUpload = async () => {
         if (!file) return;
 
@@ -69,9 +74,14 @@ export default function AudioUpload({ onUploadComplete, sessionId }: AudioUpload
             setProcessing(true);
 
             // Step 2: Process the recording
+            const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+            if (keys.groqApiKey) headers['x-groq-key'] = keys.groqApiKey;
+            if (keys.openRouterApiKey) headers['x-openrouter-key'] = keys.openRouterApiKey;
+            if (keys.assemblyAiApiKey) headers['x-assemblyai-key'] = keys.assemblyAiApiKey;
+
             const processRes = await fetch('/api/process', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify({
                     recordingId: uploadData.id,
                     sessionId,

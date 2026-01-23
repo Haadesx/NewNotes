@@ -6,6 +6,7 @@ import { useMicrophone } from '@/hooks/use-microphone';
 import { useLiveTranscription } from '@/hooks/use-live-transcription';
 import { useLiveNotes } from '@/hooks/use-live-notes';
 import ModeSelector from '@/components/mode-selector';
+import ApiKeyModal from '@/components/api-key-modal';
 import { RecordingMode } from '@/types';
 import {
     ArrowLeft,
@@ -431,6 +432,7 @@ ${fullTranscript || 'No transcript recorded.'}
                     </div>
                 )}
             </main>
+            <ApiKeyModal />
         </div>
     );
 }

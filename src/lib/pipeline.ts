@@ -27,17 +27,24 @@ interface ProcessingResult {
     cost: number;
 }
 
+
+interface PipelineOptions {
+    groqApiKey?: string;
+    openRouterApiKey?: string;
+}
+
 export async function processTranscript(
     transcript: string,
     segments: TranscriptSegment[],
     mode: RecordingMode,
-    duration: number
+    duration: number,
+    options: PipelineOptions = {}
 ): Promise<ProcessingResult> {
     let totalTokens = 0;
     let totalCost = 0;
 
     // Step 1: Clean up transcript
-    const cleanedTranscript = await cleanupTranscript(transcript);
+    const cleanedTranscript = await cleanupTranscript(transcript, options);
     totalTokens += cleanedTranscript.tokensUsed;
     totalCost += cleanedTranscript.cost;
 
@@ -51,24 +58,24 @@ export async function processTranscript(
             .map((s) => `[${formatTime(s.start)}] ${s.speaker}: ${s.text}`)
             .join('\n');
 
-        const summary = await summarizeChunk(chunkText, mode, i, chunks.length);
+        const summary = await summarizeChunk(chunkText, mode, i, chunks.length, options);
         chunkSummaries.push(summary.content);
         totalTokens += summary.tokensUsed;
         totalCost += summary.cost;
     }
 
     // Step 4: Merge summaries
-    const mergedNotes = await mergeSummaries(chunkSummaries, mode);
+    const mergedNotes = await mergeSummaries(chunkSummaries, mode, options);
     totalTokens += mergedNotes.tokensUsed;
     totalCost += mergedNotes.cost;
 
     // Step 5: Generate title
-    const titleResult = await generateTitle(transcript, mode);
+    const titleResult = await generateTitle(transcript, mode, options);
     totalTokens += titleResult.tokensUsed;
     totalCost += titleResult.cost;
 
     // Step 6: Verification pass
-    const verification = await verifyNotes(mergedNotes.content, transcript);
+    const verification = await verifyNotes(mergedNotes.content, transcript, options);
     totalTokens += verification.tokensUsed;
     totalCost += verification.cost;
 
@@ -91,7 +98,7 @@ export async function processTranscript(
     };
 }
 
-async function cleanupTranscript(transcript: string): Promise<LLMResponse> {
+async function cleanupTranscript(transcript: string, options: PipelineOptions): Promise<LLMResponse> {
     // For short transcripts, skip cleanup to save tokens
     if (transcript.length < 1000) {
         return { content: transcript, model: 'skip', tokensUsed: 0, cost: 0 };
@@ -100,24 +107,26 @@ async function cleanupTranscript(transcript: string): Promise<LLMResponse> {
     return llmRouter.complete([
         { role: 'system', content: 'You clean up transcripts while preserving meaning.' },
         { role: 'user', content: getCleanupPrompt(transcript) },
-    ], { maxTokens: 4096 });
+    ], { maxTokens: 4096, ...options });
 }
 
 async function summarizeChunk(
     chunkText: string,
     mode: RecordingMode,
     index: number,
-    total: number
+    total: number,
+    options: PipelineOptions
 ): Promise<LLMResponse> {
     return llmRouter.complete([
         { role: 'system', content: getSystemPrompt(mode) },
         { role: 'user', content: getChunkSummaryPrompt(chunkText, mode, index, total) },
-    ], { maxTokens: 2048 });
+    ], { maxTokens: 2048, ...options });
 }
 
 async function mergeSummaries(
     summaries: string[],
-    mode: RecordingMode
+    mode: RecordingMode,
+    options: PipelineOptions
 ): Promise<LLMResponse> {
     // If only one chunk, return it directly
     if (summaries.length === 1) {
@@ -127,28 +136,31 @@ async function mergeSummaries(
     return llmRouter.complete([
         { role: 'system', content: getSystemPrompt(mode) },
         { role: 'user', content: getMergePrompt(summaries, mode) },
-    ], { maxTokens: 4096 });
+    ], { maxTokens: 4096, ...options });
 }
 
 async function generateTitle(
     transcript: string,
-    mode: RecordingMode
+    mode: RecordingMode,
+    options: PipelineOptions
 ): Promise<LLMResponse> {
     return llmRouter.complete([
         { role: 'system', content: 'You generate concise, descriptive titles.' },
         { role: 'user', content: getTitlePrompt(transcript, mode) },
-    ], { maxTokens: 50 });
+    ], { maxTokens: 50, ...options });
 }
 
 async function verifyNotes(
     notes: string,
-    transcript: string
+    transcript: string,
+    options: PipelineOptions
 ): Promise<LLMResponse> {
     return llmRouter.complete([
         { role: 'system', content: 'You verify notes against transcripts for accuracy.' },
         { role: 'user', content: getVerificationPrompt(notes, transcript.slice(0, 8000)) },
-    ], { maxTokens: 1024 });
+    ], { maxTokens: 1024, ...options });
 }
+
 
 function chunkTranscript(
     segments: TranscriptSegment[],

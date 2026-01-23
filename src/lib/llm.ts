@@ -76,12 +76,21 @@ interface LLMResponse {
     cost: number;
 }
 
+interface LLMOptions {
+    preferQuality?: boolean;
+    maxTokens?: number;
+    temperature?: number;
+    groqApiKey?: string;
+    openRouterApiKey?: string;
+}
+
 class LLMRouter {
-    private groqClient: Groq | null = null;
+    // Cache the default client to avoid recreation if using env var
+    private defaultGroqClient: Groq | null = null;
 
     constructor() {
         if (process.env.GROQ_API_KEY) {
-            this.groqClient = new Groq({
+            this.defaultGroqClient = new Groq({
                 apiKey: process.env.GROQ_API_KEY,
             });
         }
@@ -89,11 +98,7 @@ class LLMRouter {
 
     async complete(
         messages: { role: 'system' | 'user' | 'assistant'; content: string }[],
-        options: {
-            preferQuality?: boolean;
-            maxTokens?: number;
-            temperature?: number;
-        } = {}
+        options: LLMOptions = {}
     ): Promise<LLMResponse> {
         const { preferQuality = false, maxTokens = 4096, temperature = 0.3 } = options;
 
@@ -107,9 +112,9 @@ class LLMRouter {
         for (const modelConfig of modelsToTry) {
             try {
                 if (modelConfig.provider === 'groq') {
-                    return await this.callGroq(messages, modelConfig, maxTokens, temperature);
+                    return await this.callGroq(messages, modelConfig, maxTokens, temperature, options.groqApiKey);
                 } else {
-                    return await this.callOpenRouter(messages, modelConfig, maxTokens, temperature);
+                    return await this.callOpenRouter(messages, modelConfig, maxTokens, temperature, options.openRouterApiKey);
                 }
             } catch (error) {
                 console.error(`Model ${modelConfig.model} failed:`, error);
@@ -125,13 +130,24 @@ class LLMRouter {
         messages: { role: 'system' | 'user' | 'assistant'; content: string }[],
         config: ModelConfig,
         maxTokens: number,
-        temperature: number
+        temperature: number,
+        customKey?: string
     ): Promise<LLMResponse> {
-        if (!this.groqClient) {
-            throw new Error('Groq client not initialized');
+        let client = this.defaultGroqClient;
+
+        // If a custom key is provided, use it instead of the default client
+        if (customKey) {
+            client = new Groq({ apiKey: customKey });
+        } else if (!client) {
+            // No default client and no custom key
+            if (process.env.GROQ_API_KEY) {
+                client = new Groq({ apiKey: process.env.GROQ_API_KEY });
+            } else {
+                throw new Error('Groq API Key missing (env or custom)');
+            }
         }
 
-        const response = await this.groqClient.chat.completions.create({
+        const response = await client.chat.completions.create({
             model: config.model,
             messages,
             max_tokens: Math.min(maxTokens, config.maxTokens),
@@ -153,16 +169,19 @@ class LLMRouter {
         messages: { role: 'system' | 'user' | 'assistant'; content: string }[],
         config: ModelConfig,
         maxTokens: number,
-        temperature: number
+        temperature: number,
+        customKey?: string
     ): Promise<LLMResponse> {
-        if (!process.env.OPENROUTER_API_KEY) {
+        const apiKey = customKey || process.env.OPENROUTER_API_KEY;
+
+        if (!apiKey) {
             throw new Error('OpenRouter API key not set');
         }
 
         const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+                'Authorization': `Bearer ${apiKey}`,
                 'Content-Type': 'application/json',
                 'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
             },
@@ -194,3 +213,4 @@ class LLMRouter {
 export const llmRouter = new LLMRouter();
 export { MODELS };
 export type { LLMResponse, ModelConfig };
+
