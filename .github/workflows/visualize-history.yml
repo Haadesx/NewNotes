@@ -1,0 +1,64 @@
+name: Visualize History
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'public/assets/gource.mp4'
+      - 'public/assets/gource.gif'
+      - 'README.md'
+      - '.github/workflows/visualize-history.yml'
+
+jobs:
+  update-visualization:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gource ffmpeg xvfb
+
+      - name: Generate Gource Video
+        run: |
+          # Use xvfb to provide a virtual display for Gource
+          xvfb-run -a gource \
+            --seconds-per-day 0.5 \
+            --auto-skip-seconds 0.1 \
+            --title "AudioNotes" \
+            --key \
+            --highlight-users \
+            --background-colour 0a0a0a \
+            --font-colour 8b5cf6 \
+            --1920x1080 \
+            --stop-at-end \
+            --output-ppm-stream - \
+            | ffmpeg -y -r 60 -f image2pipe -c:v ppm -i - -c:v libx264 -preset medium -pix_fmt yuv420p -crf 20 -threads 0 public/assets/gource.mp4
+
+      - name: Generate GIF Preview
+        run: |
+          ffmpeg -y -i public/assets/gource.mp4 \
+            -vf "fps=15,scale=800:-1:flags=lanczos,split[s0][s1];[s0]palettegen[p];[s1][p]paletteuse" \
+            -loop 0 public/assets/gource.gif
+
+      - name: Commit and Push
+        run: |
+            git config --global user.name "github-actions[bot]"
+            git config --global user.email "github-actions[bot]@users.noreply.github.com"
+            git add public/assets/gource.mp4 public/assets/gource.gif
+            
+            # Check if there are changes to commit
+            if git diff --staged --quiet; then
+              echo "No changes to commit"
+            else
+              git commit -m "docs: Update project history visualization [skip ci]"
+              git push
+            fi
