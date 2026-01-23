@@ -59,6 +59,7 @@ A **Gource** visualization of the entire development process. Watch the codebase
 
 *   **🛡️ Anti-Hallucination Engine**: Every claim in the notes is verified against the transcript. If the AI can't find a timestamped source for a claim, it's rejected.
 *   **💸 Smart Cost Routing**: Uses a "waterfall" strategy. Always attempts to use free, high-speed models (Llama 3 on Groq) first. Only falls back to paid providers when absolutely necessary.
+*   **🔑 Bring Your Own Key (BYOK)**: Zero-config deployment. Users can input their own API keys (Groq, OpenRouter) directly in the UI, stored securely in local storage. No environment variables required for public users.
 *   **🔒 Local-First Privacy**: Your recordings and database (`SQLite`) live on your machine. We don't train on your data.
 *   **📝 Adaptive Formats**: Smart templates for different needs:
     *   *Meeting*: Decisions, Action Items, Owners
@@ -108,8 +109,8 @@ Want to run this locally? It's easy.
     Create a `.env` file in the root directory:
     ```env
     DATABASE_URL="file:./prisma/dev.db"
+    # Optional (skip to use BYOK mode in UI):
     GROQ_API_KEY="your_key_here"
-    # Optional:
     OPENROUTER_API_KEY="your_key_here"
     ASSEMBLYAI_API_KEY="your_key_here"
     ```
